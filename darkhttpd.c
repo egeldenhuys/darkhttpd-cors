@@ -2156,6 +2156,26 @@ static void process_get(struct connection *conn) {
     }
 }
 
+static void add_extra_headers(struct connection *conn) {
+    printf("Adding extra headers...\n");
+    const char* extra_headers = "Access-Control-Allow-Origin: *\r\n\r\n";
+
+    conn->header[strlen(conn->header) - 2] = '\0';
+
+    char * new_str;
+    if((new_str = malloc(strlen(conn->header)+strlen(extra_headers)+1)) != NULL){
+        new_str[0] = '\0';   // ensures the memory is an empty string
+        strcat(new_str,conn->header);
+        strcat(new_str,extra_headers);
+    } else {
+        printf("malloc failed!\n");
+        exit(1);
+    }
+
+    conn->header = new_str;
+    conn->header_length = strlen(conn->header);
+}
+
 /* Process a request: build the header and reply, advance state. */
 static void process_request(struct connection *conn) {
     num_requests++;
@@ -2193,6 +2213,8 @@ static void process_request(struct connection *conn) {
         default_reply(conn, 400, "Bad Request",
                       "%s is not a valid HTTP/1.1 method.", conn->method);
     }
+
+    add_extra_headers(conn);
 
     /* advance state */
     conn->state = SEND_HEADER;
